@@ -1,0 +1,54 @@
+use serde::{Deserialize, Serialize};
+use schemars::JsonSchema;
+use crate::models::common::StatusCategory;
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct Transition {
+    pub id: String,
+    pub name: String,
+    pub to: TransitionDestination,
+    #[serde(default)]
+    pub has_screen: Option<bool>,
+    #[serde(default)]
+    pub is_conditional: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct TransitionDestination {
+    pub name: String,
+    pub id: String,
+    #[serde(default)]
+    pub status_category: Option<StatusCategory>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct TransitionResult {
+    pub transition: String,
+    pub from_status: String,
+    pub to_status: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TransitionRequest {
+    pub transition: TransitionId,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub update: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fields: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TransitionId {
+    pub id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TransitionsResponse {
+    pub transitions: Vec<Transition>,
+}
