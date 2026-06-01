@@ -9,10 +9,7 @@ impl JiraClient {
         let mut start_at: usize = 0;
 
         loop {
-            let path = format!(
-                "/field?startAt={}&maxResults={}",
-                start_at, page_size
-            );
+            let path = format!("/field?startAt={}&maxResults={}", start_at, page_size);
 
             let response: FieldSearchResponse = self.get(&path).await?;
 

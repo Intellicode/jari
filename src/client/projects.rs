@@ -38,10 +38,7 @@ impl JiraClient {
         Ok(accumulated)
     }
 
-    pub async fn get_project(
-        &self,
-        key: &str,
-    ) -> Result<Project, JariError> {
+    pub async fn get_project(&self, key: &str) -> Result<Project, JariError> {
         let path = format!("/project/{}", key);
         self.get(&path).await
     }

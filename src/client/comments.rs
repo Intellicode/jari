@@ -40,11 +40,7 @@ impl JiraClient {
         Ok(accumulated)
     }
 
-    pub async fn get_comment(
-        &self,
-        key: &str,
-        comment_id: &str,
-    ) -> Result<Comment, JariError> {
+    pub async fn get_comment(&self, key: &str, comment_id: &str) -> Result<Comment, JariError> {
         let path = format!("/issue/{}/comment/{}", key, comment_id);
         self.get(&path).await
     }

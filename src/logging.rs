@@ -26,9 +26,7 @@ pub fn init_logging(verbose: bool) {
             .with(layer)
             .init();
     } else {
-        let layer = fmt::layer()
-            .with_writer(io::stderr)
-            .with_target(false);
+        let layer = fmt::layer().with_writer(io::stderr).with_target(false);
 
         tracing_subscriber::registry()
             .with(env_filter)

@@ -90,7 +90,11 @@ impl Config {
         let file_config: Option<FileConfig> = if path.exists() {
             let content = std::fs::read_to_string(&path)?;
             Some(toml::from_str(&content).map_err(|e| {
-                JariError::Config(format!("Failed to parse config file '{}': {}", path.display(), e))
+                JariError::Config(format!(
+                    "Failed to parse config file '{}': {}",
+                    path.display(),
+                    e
+                ))
             })?)
         } else {
             None
@@ -157,7 +161,9 @@ impl Config {
                 source_project = ConfigSource::Env;
             }
         }
-        if matches!(source_output, ConfigSource::None) || matches!(source_output, ConfigSource::File) {
+        if matches!(source_output, ConfigSource::None)
+            || matches!(source_output, ConfigSource::File)
+        {
             if let Ok(env_output) = std::env::var("JARI_OUTPUT") {
                 output_format = env_output;
                 source_output = ConfigSource::Env;

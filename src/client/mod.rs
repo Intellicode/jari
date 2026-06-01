@@ -81,11 +81,7 @@ impl JiraClient {
         self.handle_response(response).await
     }
 
-    pub async fn put_no_body<B: Serialize>(
-        &self,
-        path: &str,
-        body: &B,
-    ) -> Result<(), JariError> {
+    pub async fn put_no_body<B: Serialize>(&self, path: &str, body: &B) -> Result<(), JariError> {
         let url = self.api_url(path);
         trace!("PUT {}", url);
 
@@ -102,11 +98,7 @@ impl JiraClient {
         self.handle_response_no_body(response).await
     }
 
-    pub async fn post_no_body<B: Serialize>(
-        &self,
-        path: &str,
-        body: &B,
-    ) -> Result<(), JariError> {
+    pub async fn post_no_body<B: Serialize>(&self, path: &str, body: &B) -> Result<(), JariError> {
         let url = self.api_url(path);
         trace!("POST {}", url);
 
@@ -171,8 +163,8 @@ impl JiraClient {
         let retry_after = parse_retry_after(response.headers());
         let body_text = response.text().await.unwrap_or_default();
 
-        let jira_errors = serde_json::from_str::<ErrorCollection>(&body_text)
-            .unwrap_or(ErrorCollection {
+        let jira_errors =
+            serde_json::from_str::<ErrorCollection>(&body_text).unwrap_or(ErrorCollection {
                 error_messages: vec![body_text.clone()],
                 errors: std::collections::HashMap::new(),
             });
@@ -188,15 +180,14 @@ impl JiraClient {
         let retry_after = parse_retry_after(response.headers());
         let body_text = response.text().await.unwrap_or_default();
 
-        let jira_errors = serde_json::from_str::<ErrorCollection>(&body_text)
-            .unwrap_or(ErrorCollection {
+        let jira_errors =
+            serde_json::from_str::<ErrorCollection>(&body_text).unwrap_or(ErrorCollection {
                 error_messages: vec![body_text],
                 errors: std::collections::HashMap::new(),
             });
 
         map_status_to_error(status, Some(jira_errors), retry_after)
     }
-
 }
 
 fn parse_retry_after(headers: &reqwest::header::HeaderMap) -> Option<u64> {
@@ -217,9 +208,7 @@ fn map_status_to_error(
         404 => JariError::NotFound,
         429 => JariError::RateLimit { retry_after },
         code if (400..=499).contains(&code) => {
-            let errors = jira_errors
-                .map(|ec| ec.errors)
-                .unwrap_or_default();
+            let errors = jira_errors.map(|ec| ec.errors).unwrap_or_default();
             JariError::Validation {
                 jira_errors: errors,
             }
@@ -227,5 +216,3 @@ fn map_status_to_error(
         _ => JariError::ServerError,
     }
 }
-
-

@@ -4,10 +4,7 @@ use crate::models::transition::*;
 use serde_json::json;
 
 impl JiraClient {
-    pub async fn list_transitions(
-        &self,
-        key: &str,
-    ) -> Result<Vec<Transition>, JariError> {
+    pub async fn list_transitions(&self, key: &str) -> Result<Vec<Transition>, JariError> {
         let path = format!("/issue/{}/transitions", key);
         let response: TransitionsResponse = self.get(&path).await?;
         Ok(response.transitions)
@@ -92,12 +89,16 @@ fn resolve_transition_id(
         return Ok(t.id.clone());
     }
 
-    let starts_with = transitions.iter().find(|t| t.name.to_lowercase().starts_with(&lower));
+    let starts_with = transitions
+        .iter()
+        .find(|t| t.name.to_lowercase().starts_with(&lower));
     if let Some(t) = starts_with {
         return Ok(t.id.clone());
     }
 
-    let contains = transitions.iter().find(|t| t.name.to_lowercase().contains(&lower));
+    let contains = transitions
+        .iter()
+        .find(|t| t.name.to_lowercase().contains(&lower));
     if let Some(t) = contains {
         return Ok(t.id.clone());
     }

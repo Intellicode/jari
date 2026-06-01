@@ -1,7 +1,7 @@
 use crate::client::JiraClient;
 use crate::error::JariError;
-use crate::models::search::*;
 use crate::models::issue::IssueSummary;
+use crate::models::search::*;
 
 const MAX_SEARCH_RESULTS: usize = 1000;
 
@@ -17,7 +17,9 @@ impl JiraClient {
         }
 
         let page_size = self.max_page_size;
-        let max_results = max_override.unwrap_or(MAX_SEARCH_RESULTS).min(MAX_SEARCH_RESULTS);
+        let max_results = max_override
+            .unwrap_or(MAX_SEARCH_RESULTS)
+            .min(MAX_SEARCH_RESULTS);
 
         let default_fields = vec![
             "summary".into(),
@@ -26,9 +28,7 @@ impl JiraClient {
             "priority".into(),
             "issuetype".into(),
         ];
-        let field_list: Vec<String> = fields
-            .map(|f| f.to_vec())
-            .unwrap_or(default_fields);
+        let field_list: Vec<String> = fields.map(|f| f.to_vec()).unwrap_or(default_fields);
 
         let mut accumulated: Vec<IssueSummary> = Vec::new();
         let mut start_at: usize = 0;

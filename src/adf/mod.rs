@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-pub mod to_markdown;
 pub mod from_markdown;
+pub mod to_markdown;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Doc {

@@ -77,9 +77,7 @@ fn node_to_markdown(node: &Node) -> String {
             out
         }
 
-        "listItem" => {
-            children_to_markdown_inline(node)
-        }
+        "listItem" => children_to_markdown_inline(node),
 
         "codeBlock" => {
             let lang = node
@@ -170,12 +168,7 @@ fn node_to_markdown(node: &Node) -> String {
 
             let col_count = all_rows
                 .iter()
-                .map(|r| {
-                    r.content
-                        .as_ref()
-                        .map(|c| c.len())
-                        .unwrap_or(0)
-                })
+                .map(|r| r.content.as_ref().map(|c| c.len()).unwrap_or(0))
                 .max()
                 .unwrap_or(0);
 
@@ -205,15 +198,11 @@ fn node_to_markdown(node: &Node) -> String {
                     out.push('\n');
                 }
                 // separator row
-                let seps: Vec<String> = (0..col_count)
-                    .map(|_| "---".to_string())
-                    .collect();
+                let seps: Vec<String> = (0..col_count).map(|_| "---".to_string()).collect();
                 out.push_str(&format_cells(&seps));
                 out.push('\n');
             } else {
-                let seps: Vec<String> = (0..col_count)
-                    .map(|_| "---".to_string())
-                    .collect();
+                let seps: Vec<String> = (0..col_count).map(|_| "---".to_string()).collect();
                 out.push_str(&format_cells(&seps));
                 out.push('\n');
             }
@@ -275,11 +264,7 @@ fn node_to_markdown(node: &Node) -> String {
                 .as_ref()
                 .and_then(|a| a.get("alt"))
                 .and_then(|v| v.as_str())
-                .or(
-                    url.split('/')
-                        .next_back()
-                        .and_then(|f| f.split('?').next()),
-                )
+                .or(url.split('/').next_back().and_then(|f| f.split('?').next()))
                 .unwrap_or("image");
             format!("![{}]({})", alt, url)
         }
@@ -351,27 +336,26 @@ fn node_to_markdown(node: &Node) -> String {
             format!("{}{}\n", checkbox, content)
         }
 
-        "date" => {
-            node.attrs
-                .as_ref()
-                .and_then(|a| a.get("timestamp"))
-                .and_then(|v| v.as_str())
-                .map(|s| {
-                    let ms: Result<i64, _> = s.parse();
-                    match ms {
-                        Ok(ts) => {
-                            let date = if ts > 1_000_000_000_000 {
-                                ts / 1000
-                            } else {
-                                ts
-                            };
-                            chrono_like(date)
-                        }
-                        Err(_) => s.to_string(),
+        "date" => node
+            .attrs
+            .as_ref()
+            .and_then(|a| a.get("timestamp"))
+            .and_then(|v| v.as_str())
+            .map(|s| {
+                let ms: Result<i64, _> = s.parse();
+                match ms {
+                    Ok(ts) => {
+                        let date = if ts > 1_000_000_000_000 {
+                            ts / 1000
+                        } else {
+                            ts
+                        };
+                        chrono_like(date)
                     }
-                })
-                .unwrap_or_default()
-        }
+                    Err(_) => s.to_string(),
+                }
+            })
+            .unwrap_or_default(),
 
         "status" => {
             let text = node
@@ -416,20 +400,14 @@ fn node_to_markdown(node: &Node) -> String {
 
 fn children_to_markdown_inline(node: &Node) -> String {
     match &node.content {
-        Some(children) => children
-            .iter()
-            .map(node_to_markdown)
-            .collect::<String>(),
+        Some(children) => children.iter().map(node_to_markdown).collect::<String>(),
         None => String::new(),
     }
 }
 
 fn children_to_markdown(node: &Node) -> String {
     match &node.content {
-        Some(children) => children
-            .iter()
-            .map(node_to_markdown)
-            .collect::<String>(),
+        Some(children) => children.iter().map(node_to_markdown).collect::<String>(),
         None => String::new(),
     }
 }

@@ -16,7 +16,11 @@ pub struct Cli {
     #[arg(long, help = "API token (overrides config/env)")]
     pub token: Option<String>,
 
-    #[arg(long, default_value = "json", help = "Output format: json, json-pretty")]
+    #[arg(
+        long,
+        default_value = "json",
+        help = "Output format: json, json-pretty"
+    )]
     pub output: Option<String>,
 
     #[arg(long, help = "Default project key (overrides config/env)")]
@@ -41,7 +45,12 @@ pub enum Commands {
         #[arg(short = 'n', long, help = "Maximum results (default: all)")]
         max: Option<usize>,
 
-        #[arg(short = 'f', long, default_value = "summary,status,assignee,priority,issuetype", help = "Comma-separated fields")]
+        #[arg(
+            short = 'f',
+            long,
+            default_value = "summary,status,assignee,priority,issuetype",
+            help = "Comma-separated fields"
+        )]
         fields: Option<String>,
     },
 
@@ -98,13 +107,26 @@ pub enum IssueCmd {
         #[arg(short = 's', long, help = "Issue summary/title (required)")]
         summary: String,
 
-        #[arg(short = 't', long, default_value = "Task", help = "Issue type: Story, Bug, Task, etc.")]
+        #[arg(
+            short = 't',
+            long,
+            default_value = "Task",
+            help = "Issue type: Story, Bug, Task, etc."
+        )]
         issue_type: String,
 
-        #[arg(short = 'd', long, help = "Description in markdown (use @file.md for file input)")]
+        #[arg(
+            short = 'd',
+            long,
+            help = "Description in markdown (use @file.md for file input)"
+        )]
         description: Option<String>,
 
-        #[arg(short = 'P', long, help = "Priority: Highest, High, Medium, Low, Lowest")]
+        #[arg(
+            short = 'P',
+            long,
+            help = "Priority: Highest, High, Medium, Low, Lowest"
+        )]
         priority: Option<String>,
 
         #[arg(short = 'a', long, help = "Assignee account ID or email")]

@@ -14,13 +14,15 @@ mod models;
 mod output;
 mod schema;
 
-use crate::cli::{Cli, Commands, IssueCmd, WatchCmd, TransitionCmd, CommentCmd, ProjectCmd, FieldCmd, ConfigCmd};
+use crate::adf::from_markdown::markdown_to_adf;
+use crate::adf::to_markdown::adf_to_markdown;
+use crate::cli::{
+    Cli, Commands, CommentCmd, ConfigCmd, FieldCmd, IssueCmd, ProjectCmd, TransitionCmd, WatchCmd,
+};
+use crate::client::JiraClient;
 use crate::config::Config;
 use crate::error::JariError;
 use crate::output::Output;
-use crate::client::JiraClient;
-use crate::adf::from_markdown::markdown_to_adf;
-use crate::adf::to_markdown::adf_to_markdown;
 
 #[tokio::main]
 async fn main() {
@@ -28,10 +30,7 @@ async fn main() {
     let cli = Cli::parse();
     logging::init_logging(cli.verbose);
 
-    let command_string = std::env::args()
-        .skip(1)
-        .collect::<Vec<_>>()
-        .join(" ");
+    let command_string = std::env::args().skip(1).collect::<Vec<_>>().join(" ");
 
     // Commands that don't need config
     match &cli.command {
@@ -48,8 +47,13 @@ async fn main() {
         Commands::Config(ConfigCmd::Path) => {
             let path = Config::config_path(cli.config.as_deref());
             let duration = start.elapsed().as_millis() as u64;
-            #[derive(Serialize)] struct P { path: String }
-            let p = P { path: path.to_string_lossy().to_string() };
+            #[derive(Serialize)]
+            struct P {
+                path: String,
+            }
+            let p = P {
+                path: path.to_string_lossy().to_string(),
+            };
             let output = Output::success(&p, command_string, duration);
             output.print(cli.output.as_deref());
             return;
@@ -117,12 +121,14 @@ async fn main() {
                     "ok": true,
                     "data": value,
                     "meta": {"command": &command_string, "duration_ms": duration}
-                })).unwrap(),
+                }))
+                .unwrap(),
                 _ => serde_json::to_string(&serde_json::json!({
                     "ok": true,
                     "data": value,
                     "meta": {"command": &command_string, "duration_ms": duration}
-                })).unwrap(),
+                }))
+                .unwrap(),
             };
             println!("{}", output_str);
         }
@@ -140,9 +146,9 @@ async fn dispatch(cmd: &Commands, config: &Config) -> Result<serde_json::Value, 
     match cmd {
         Commands::Issue(issue_cmd) => dispatch_issue(issue_cmd, &client).await,
         Commands::Search { jql, max, fields } => {
-            let field_strings: Option<Vec<String>> = fields.as_ref().map(|f| {
-                f.split(',').map(|s| s.trim().to_string()).collect()
-            });
+            let field_strings: Option<Vec<String>> = fields
+                .as_ref()
+                .map(|f| f.split(',').map(|s| s.trim().to_string()).collect());
             let field_ref: Option<&[String]> = field_strings.as_deref();
             let issues = client.search(jql, field_ref, *max).await?;
             Ok(serde_json::to_value(issues)?)
@@ -150,7 +156,9 @@ async fn dispatch(cmd: &Commands, config: &Config) -> Result<serde_json::Value, 
         Commands::Transition(trans_cmd) => dispatch_transition(trans_cmd, &client).await,
         Commands::Comment(comment_cmd) => dispatch_comment(comment_cmd, &client).await,
         Commands::Project(proj_cmd) => dispatch_project(proj_cmd, &client).await,
-        Commands::Field { cmd: FieldCmd::List } => {
+        Commands::Field {
+            cmd: FieldCmd::List,
+        } => {
             let fields = client.list_fields().await?;
             Ok(serde_json::to_value(fields)?)
         }
@@ -162,21 +170,27 @@ async fn dispatch(cmd: &Commands, config: &Config) -> Result<serde_json::Value, 
     }
 }
 
-async fn dispatch_issue(cmd: &IssueCmd, client: &JiraClient) -> Result<serde_json::Value, JariError> {
+async fn dispatch_issue(
+    cmd: &IssueCmd,
+    client: &JiraClient,
+) -> Result<serde_json::Value, JariError> {
     match cmd {
         IssueCmd::Get { key, fields, raw } => {
-            let field_slice: Option<Vec<String>> = fields.as_ref().map(|f| {
-                f.split(',').map(|s| s.trim().to_string()).collect()
-            });
+            let field_slice: Option<Vec<String>> = fields
+                .as_ref()
+                .map(|f| f.split(',').map(|s| s.trim().to_string()).collect());
             let field_ref: Option<&[String]> = field_slice.as_deref();
             let mut issue = client.get_issue(key, field_ref).await?;
 
             if !*raw {
                 if let Some(ref adf) = issue.fields.description_raw {
                     match adf_to_markdown(adf) {
-                        Ok(md) => { issue.fields.description_markdown = Some(md); }
+                        Ok(md) => {
+                            issue.fields.description_markdown = Some(md);
+                        }
                         Err(e) => {
-                            issue.fields.description_markdown = Some(format!("[ADF conversion error: {}]", e));
+                            issue.fields.description_markdown =
+                                Some(format!("[ADF conversion error: {}]", e));
                         }
                     }
                 }
@@ -185,8 +199,15 @@ async fn dispatch_issue(cmd: &IssueCmd, client: &JiraClient) -> Result<serde_jso
             Ok(serde_json::to_value(issue)?)
         }
         IssueCmd::Create {
-            project, summary, issue_type, description,
-            priority, assignee, labels, parent, epic_link,
+            project,
+            summary,
+            issue_type,
+            description,
+            priority,
+            assignee,
+            labels,
+            parent,
+            epic_link,
         } => {
             let description_adf = if let Some(desc) = description {
                 let md = if let Some(path) = desc.strip_prefix('@') {
@@ -206,7 +227,10 @@ async fn dispatch_issue(cmd: &IssueCmd, client: &JiraClient) -> Result<serde_jso
             };
 
             let labels_vec: Option<Vec<String>> = labels.as_ref().map(|l| {
-                l.split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect()
+                l.split(',')
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty())
+                    .collect()
             });
 
             let request = crate::models::issue::CreateIssueRequest {
@@ -224,7 +248,14 @@ async fn dispatch_issue(cmd: &IssueCmd, client: &JiraClient) -> Result<serde_jso
             let created = client.create_issue(&request).await?;
             Ok(serde_json::to_value(created)?)
         }
-        IssueCmd::Edit { key, summary, description, priority, labels, add_label } => {
+        IssueCmd::Edit {
+            key,
+            summary,
+            description,
+            priority,
+            labels,
+            add_label,
+        } => {
             let mut fields_map: HashMap<String, serde_json::Value> = HashMap::new();
 
             if let Some(ref s) = summary {
@@ -245,7 +276,11 @@ async fn dispatch_issue(cmd: &IssueCmd, client: &JiraClient) -> Result<serde_jso
                 fields_map.insert("priority".into(), serde_json::json!({"name": p}));
             }
             if let Some(ref l) = labels {
-                let label_vec: Vec<String> = l.split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect();
+                let label_vec: Vec<String> = l
+                    .split(',')
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty())
+                    .collect();
                 fields_map.insert("labels".into(), serde_json::to_value(label_vec)?);
             }
             if !add_label.is_empty() {
@@ -253,7 +288,9 @@ async fn dispatch_issue(cmd: &IssueCmd, client: &JiraClient) -> Result<serde_jso
             }
 
             if fields_map.is_empty() {
-                return Err(JariError::Cli("At least one field to edit is required".into()));
+                return Err(JariError::Cli(
+                    "At least one field to edit is required".into(),
+                ));
             }
 
             client.edit_issue(key, &fields_map).await?;
@@ -286,16 +323,23 @@ async fn resolve_user(user: &str, client: &JiraClient) -> Result<String, JariErr
     match user.to_lowercase().as_str() {
         "me" | "currentuser()" => {
             let current = client.get_current_user().await?;
-            current.account_id.ok_or_else(|| JariError::Config("Current user has no account ID".into()))
+            current
+                .account_id
+                .ok_or_else(|| JariError::Config("Current user has no account ID".into()))
         }
         "unassigned" | "none" => Ok(String::new()),
         _ => Ok(user.to_string()),
     }
 }
 
-async fn dispatch_watch(cmd: &WatchCmd, client: &JiraClient) -> Result<serde_json::Value, JariError> {
+async fn dispatch_watch(
+    cmd: &WatchCmd,
+    client: &JiraClient,
+) -> Result<serde_json::Value, JariError> {
     let current_user = client.get_current_user().await?;
-    let account_id = current_user.account_id.ok_or_else(|| JariError::Config("Current user has no account ID".into()))?;
+    let account_id = current_user
+        .account_id
+        .ok_or_else(|| JariError::Config("Current user has no account ID".into()))?;
 
     match cmd {
         WatchCmd::Add { key } => {
@@ -317,37 +361,48 @@ async fn dispatch_watch(cmd: &WatchCmd, client: &JiraClient) -> Result<serde_jso
     }
 }
 
-async fn dispatch_transition(cmd: &TransitionCmd, client: &JiraClient) -> Result<serde_json::Value, JariError> {
+async fn dispatch_transition(
+    cmd: &TransitionCmd,
+    client: &JiraClient,
+) -> Result<serde_json::Value, JariError> {
     match cmd {
         TransitionCmd::List { key } => {
             let transitions = client.list_transitions(key).await?;
             Ok(serde_json::to_value(transitions)?)
         }
-        TransitionCmd::Do { key, transition, comment, resolution } => {
-            let result = client.do_transition(
-                key,
-                transition,
-                comment.as_deref(),
-                resolution.as_deref(),
-            ).await?;
+        TransitionCmd::Do {
+            key,
+            transition,
+            comment,
+            resolution,
+        } => {
+            let result = client
+                .do_transition(key, transition, comment.as_deref(), resolution.as_deref())
+                .await?;
             Ok(serde_json::to_value(result)?)
         }
     }
 }
 
-async fn dispatch_comment(cmd: &CommentCmd, client: &JiraClient) -> Result<serde_json::Value, JariError> {
+async fn dispatch_comment(
+    cmd: &CommentCmd,
+    client: &JiraClient,
+) -> Result<serde_json::Value, JariError> {
     match cmd {
         CommentCmd::List { key, max } => {
             let comments = client.list_comments(key, *max).await?;
-            let comments_md: Vec<serde_json::Value> = comments.iter().map(|c| {
-                let mut val = serde_json::to_value(c).unwrap_or(serde_json::Value::Null);
-                if let Some(ref raw_body) = c.body_raw {
-                    if let Ok(md) = adf_to_markdown(raw_body) {
-                        val["body_markdown"] = serde_json::Value::String(md);
+            let comments_md: Vec<serde_json::Value> = comments
+                .iter()
+                .map(|c| {
+                    let mut val = serde_json::to_value(c).unwrap_or(serde_json::Value::Null);
+                    if let Some(ref raw_body) = c.body_raw {
+                        if let Ok(md) = adf_to_markdown(raw_body) {
+                            val["body_markdown"] = serde_json::Value::String(md);
+                        }
                     }
-                }
-                val
-            }).collect();
+                    val
+                })
+                .collect();
             Ok(serde_json::Value::Array(comments_md))
         }
         CommentCmd::Get { key, id } => {
@@ -360,7 +415,11 @@ async fn dispatch_comment(cmd: &CommentCmd, client: &JiraClient) -> Result<serde
             }
             Ok(val)
         }
-        CommentCmd::Add { key, body, visibility } => {
+        CommentCmd::Add {
+            key,
+            body,
+            visibility,
+        } => {
             if body.trim().is_empty() {
                 return Err(JariError::Cli("Comment body is required".into()));
             }
@@ -370,7 +429,10 @@ async fn dispatch_comment(cmd: &CommentCmd, client: &JiraClient) -> Result<serde
     }
 }
 
-async fn dispatch_project(cmd: &ProjectCmd, client: &JiraClient) -> Result<serde_json::Value, JariError> {
+async fn dispatch_project(
+    cmd: &ProjectCmd,
+    client: &JiraClient,
+) -> Result<serde_json::Value, JariError> {
     match cmd {
         ProjectCmd::List { project_type } => {
             let projects = client.list_projects(project_type.as_deref()).await?;
@@ -421,7 +483,7 @@ fn mask_token(token: &str) -> String {
     if token.len() <= 8 {
         "***".to_string()
     } else {
-        format!("{}...{}", &token[..4], &token[token.len()-4..])
+        format!("{}...{}", &token[..4], &token[token.len() - 4..])
     }
 }
 
@@ -432,12 +494,14 @@ struct ConfigInitData {
 }
 
 async fn run_config_init() -> Result<ConfigInitData, JariError> {
-    use std::io::{Write, IsTerminal};
+    use std::io::{IsTerminal, Write};
 
     let config_path = Config::config_path(None);
 
     if !std::io::stdin().is_terminal() {
-        return Err(JariError::Cli("config init requires an interactive terminal".into()));
+        return Err(JariError::Cli(
+            "config init requires an interactive terminal".into(),
+        ));
     }
 
     let stdin = std::io::stdin();
@@ -446,7 +510,9 @@ async fn run_config_init() -> Result<ConfigInitData, JariError> {
     eprint!("Jira Cloud URL (e.g., https://company.atlassian.net): ");
     stdout.flush().ok();
     let mut url = String::new();
-    stdin.read_line(&mut url).map_err(|e| JariError::Config(format!("Failed to read input: {}", e)))?;
+    stdin
+        .read_line(&mut url)
+        .map_err(|e| JariError::Config(format!("Failed to read input: {}", e)))?;
     url = url.trim().to_string();
 
     if url.is_empty() {
@@ -456,7 +522,9 @@ async fn run_config_init() -> Result<ConfigInitData, JariError> {
     eprint!("Email: ");
     stdout.flush().ok();
     let mut email = String::new();
-    stdin.read_line(&mut email).map_err(|e| JariError::Config(format!("Failed to read input: {}", e)))?;
+    stdin
+        .read_line(&mut email)
+        .map_err(|e| JariError::Config(format!("Failed to read input: {}", e)))?;
     email = email.trim().to_string();
 
     if email.is_empty() || !email.contains('@') {
@@ -491,7 +559,11 @@ async fn run_config_init() -> Result<ConfigInitData, JariError> {
     let client = JiraClient::new(&temp_config)?;
     let user_info = match client.get_current_user().await {
         Ok(user) => {
-            eprintln!("Connected as: {} ({})", user.display_name, user.email_address.as_deref().unwrap_or("no email"));
+            eprintln!(
+                "Connected as: {} ({})",
+                user.display_name,
+                user.email_address.as_deref().unwrap_or("no email")
+            );
             Some(serde_json::to_value(user).unwrap_or(serde_json::Value::Null))
         }
         Err(e) => {
@@ -502,13 +574,16 @@ async fn run_config_init() -> Result<ConfigInitData, JariError> {
 
     // Write config
     let parent = config_path.parent().unwrap();
-    std::fs::create_dir_all(parent).map_err(|e| JariError::Config(format!("Failed to create config directory: {}", e)))?;
+    std::fs::create_dir_all(parent)
+        .map_err(|e| JariError::Config(format!("Failed to create config directory: {}", e)))?;
 
     if config_path.exists() {
         eprint!("Config already exists. Overwrite? (y/N): ");
         stdout.flush().ok();
         let mut answer = String::new();
-        stdin.read_line(&mut answer).map_err(|e| JariError::Config(format!("Failed to read input: {}", e)))?;
+        stdin
+            .read_line(&mut answer)
+            .map_err(|e| JariError::Config(format!("Failed to read input: {}", e)))?;
         if answer.trim().to_lowercase() != "y" && answer.trim().to_lowercase() != "yes" {
             return Err(JariError::Cli("Config init cancelled".into()));
         }
@@ -518,7 +593,8 @@ async fn run_config_init() -> Result<ConfigInitData, JariError> {
         "[connection]\nurl = \"{}\"\nemail = \"{}\"\ntoken = \"{}\"\n\n[defaults]\nmax_results = 100\n\n[output]\nformat = \"json\"\ntimezone = \"local\"\n",
         url, email, token
     );
-    std::fs::write(&config_path, toml_content).map_err(|e| JariError::Config(format!("Failed to write config: {}", e)))?;
+    std::fs::write(&config_path, toml_content)
+        .map_err(|e| JariError::Config(format!("Failed to write config: {}", e)))?;
 
     // Set file permissions to 600 on Unix
     #[cfg(unix)]

@@ -66,19 +66,12 @@ impl JiraClient {
         self.put_no_body(&path, &body).await
     }
 
-    pub async fn delete_issue(
-        &self,
-        key: &str,
-    ) -> Result<(), JariError> {
+    pub async fn delete_issue(&self, key: &str) -> Result<(), JariError> {
         let path = format!("/issue/{}", key);
         self.delete(&path).await
     }
 
-    pub async fn assign_issue(
-        &self,
-        key: &str,
-        user: &str,
-    ) -> Result<(), JariError> {
+    pub async fn assign_issue(&self, key: &str, user: &str) -> Result<(), JariError> {
         let body = if user.contains('@') {
             json!({ "name": user })
         } else {
@@ -88,21 +81,13 @@ impl JiraClient {
         self.put_no_body(&path, &body).await
     }
 
-    pub async fn add_watcher(
-        &self,
-        key: &str,
-        account_id: &str,
-    ) -> Result<(), JariError> {
+    pub async fn add_watcher(&self, key: &str, account_id: &str) -> Result<(), JariError> {
         let body = json!({ "accountId": account_id });
         let path = format!("/issue/{}/watchers", key);
         self.post_no_body(&path, &body).await
     }
 
-    pub async fn remove_watcher(
-        &self,
-        key: &str,
-        account_id: &str,
-    ) -> Result<(), JariError> {
+    pub async fn remove_watcher(&self, key: &str, account_id: &str) -> Result<(), JariError> {
         let path = format!("/issue/{}/watchers?accountId={}", key, account_id);
         self.delete(&path).await
     }

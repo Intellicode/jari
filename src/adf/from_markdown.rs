@@ -369,9 +369,7 @@ impl ADFState {
                 self.push_context("_footnote", Map::new());
             }
 
-            Tag::DefinitionList
-            | Tag::DefinitionListTitle
-            | Tag::DefinitionListDefinition => {
+            Tag::DefinitionList | Tag::DefinitionListTitle | Tag::DefinitionListDefinition => {
                 self.push_context("paragraph", Map::new());
             }
 
@@ -386,7 +384,9 @@ impl ADFState {
             TagEnd::Paragraph => {
                 // Only close if we're still inside a paragraph
                 // (might have been closed early by an inline image)
-                if self.in_paragraph || self.node_types.last().map(|t| t.as_str()) == Some("paragraph") {
+                if self.in_paragraph
+                    || self.node_types.last().map(|t| t.as_str()) == Some("paragraph")
+                {
                     self.pop_and_attach();
                     self.in_paragraph = false;
                 }
@@ -449,7 +449,8 @@ impl ADFState {
             TagEnd::TableRow => {
                 // Check if this row is a separator row (all cells are --- :--- etc.)
                 // If so, discard it instead of attaching to the table
-                let is_separator = self.content_stacks
+                let is_separator = self
+                    .content_stacks
                     .last()
                     .map(|stack| {
                         stack.iter().all(|cell| {
@@ -459,7 +460,8 @@ impl ADFState {
                                 .and_then(|n| n.get("text"))
                                 .and_then(|t| t.as_str())
                                 .map(|text| {
-                                    text.chars().all(|c| c == '-' || c == ':' || c == ' ' || c == '|')
+                                    text.chars()
+                                        .all(|c| c == '-' || c == ':' || c == ' ' || c == '|')
                                 })
                                 .unwrap_or(false)
                         })
