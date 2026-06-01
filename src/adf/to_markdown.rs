@@ -22,7 +22,7 @@ fn node_to_markdown(node: &Node) -> String {
     match node.node_type.as_str() {
         "doc" => {
             if let Some(ref children) = node.content {
-                children.iter().map(|n| node_to_markdown(n)).collect::<String>()
+                children.iter().map(node_to_markdown).collect::<String>()
             } else {
                 String::new()
             }
@@ -218,8 +218,8 @@ fn node_to_markdown(node: &Node) -> String {
                 out.push('\n');
             }
 
-            for i in start_idx..all_cells.len() {
-                out.push_str(&format_cells(&all_cells[i]));
+            for cell in all_cells.iter().skip(start_idx) {
+                out.push_str(&format_cells(cell));
                 out.push('\n');
             }
 
@@ -277,7 +277,7 @@ fn node_to_markdown(node: &Node) -> String {
                 .and_then(|v| v.as_str())
                 .or(
                     url.split('/')
-                        .last()
+                        .next_back()
                         .and_then(|f| f.split('?').next()),
                 )
                 .unwrap_or("image");
@@ -365,8 +365,7 @@ fn node_to_markdown(node: &Node) -> String {
                             } else {
                                 ts
                             };
-                            let datetime = chrono_like(date);
-                            datetime
+                            chrono_like(date)
                         }
                         Err(_) => s.to_string(),
                     }
@@ -419,7 +418,7 @@ fn children_to_markdown_inline(node: &Node) -> String {
     match &node.content {
         Some(children) => children
             .iter()
-            .map(|n| node_to_markdown(n))
+            .map(node_to_markdown)
             .collect::<String>(),
         None => String::new(),
     }
@@ -429,7 +428,7 @@ fn children_to_markdown(node: &Node) -> String {
     match &node.content {
         Some(children) => children
             .iter()
-            .map(|n| node_to_markdown(n))
+            .map(node_to_markdown)
             .collect::<String>(),
         None => String::new(),
     }

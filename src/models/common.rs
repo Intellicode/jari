@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct User {
@@ -40,22 +38,6 @@ pub struct IssueType {
     pub name: String,
     pub subtask: bool,
     pub description: Option<String>,
-}
-
-#[derive(Debug, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct Pagination {
-    pub start_at: usize,
-    pub max_results: usize,
-    pub total: usize,
-    pub is_last: bool,
-}
-
-#[derive(Debug, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct ErrorCollection {
-    pub error_messages: Vec<String>,
-    pub errors: HashMap<String, String>,
 }
 
 #[derive(Debug, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]

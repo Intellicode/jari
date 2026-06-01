@@ -559,7 +559,7 @@ impl ADFState {
 fn try_parse_details(html: &str) -> Option<Value> {
     let html = html.trim();
 
-    if html == "</details>" || html == "</details>" {
+    if html == "</details>" || html == "</DETAILS>" {
         return None; // end tag handled separately
     }
 

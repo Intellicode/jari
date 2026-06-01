@@ -342,9 +342,8 @@ async fn dispatch_comment(cmd: &CommentCmd, client: &JiraClient) -> Result<serde
             let comments_md: Vec<serde_json::Value> = comments.iter().map(|c| {
                 let mut val = serde_json::to_value(c).unwrap_or(serde_json::Value::Null);
                 if let Some(ref raw_body) = c.body_raw {
-                    match adf_to_markdown(raw_body) {
-                        Ok(md) => { val["body_markdown"] = serde_json::Value::String(md); }
-                        Err(_) => {}
+                    if let Ok(md) = adf_to_markdown(raw_body) {
+                        val["body_markdown"] = serde_json::Value::String(md);
                     }
                 }
                 val
@@ -355,9 +354,8 @@ async fn dispatch_comment(cmd: &CommentCmd, client: &JiraClient) -> Result<serde
             let comment = client.get_comment(key, id).await?;
             let mut val = serde_json::to_value(&comment)?;
             if let Some(ref raw_body) = comment.body_raw {
-                match adf_to_markdown(raw_body) {
-                    Ok(md) => { val["body_markdown"] = serde_json::Value::String(md); }
-                    Err(_) => {}
+                if let Ok(md) = adf_to_markdown(raw_body) {
+                    val["body_markdown"] = serde_json::Value::String(md);
                 }
             }
             Ok(val)

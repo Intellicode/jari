@@ -33,22 +33,6 @@ pub struct TransitionResult {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct TransitionRequest {
-    pub transition: TransitionId,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub update: Option<serde_json::Value>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub fields: Option<serde_json::Value>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TransitionId {
-    pub id: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct TransitionsResponse {
     pub transitions: Vec<Transition>,
 }

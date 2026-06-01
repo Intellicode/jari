@@ -21,8 +21,6 @@ pub struct JiraClient {
     http: Client,
     auth_header: String,
     pub max_page_size: usize,
-    max_retries: u32,
-    retry_base_ms: u64,
 }
 
 impl JiraClient {
@@ -44,8 +42,6 @@ impl JiraClient {
             http: client,
             auth_header,
             max_page_size: config.max_results,
-            max_retries: 3,
-            retry_base_ms: 1000,
         })
     }
 
@@ -75,27 +71,6 @@ impl JiraClient {
         let response = self
             .http
             .post(&url)
-            .header(AUTHORIZATION, &self.auth_header)
-            .header(ACCEPT, "application/json")
-            .header(CONTENT_TYPE, "application/json")
-            .json(body)
-            .send()
-            .await?;
-
-        self.handle_response(response).await
-    }
-
-    pub async fn put<T: DeserializeOwned, B: Serialize>(
-        &self,
-        path: &str,
-        body: &B,
-    ) -> Result<T, JariError> {
-        let url = self.api_url(path);
-        trace!("PUT {}", url);
-
-        let response = self
-            .http
-            .put(&url)
             .header(AUTHORIZATION, &self.auth_header)
             .header(ACCEPT, "application/json")
             .header(CONTENT_TYPE, "application/json")
@@ -163,42 +138,6 @@ impl JiraClient {
         self.handle_response_no_body(response).await
     }
 
-    pub async fn raw_get(&self, path: &str) -> Result<String, JariError> {
-        let url = self.api_url(path);
-        trace!("GET (raw) {}", url);
-
-        let response = self
-            .http
-            .get(&url)
-            .header(AUTHORIZATION, &self.auth_header)
-            .header(ACCEPT, "application/json")
-            .send()
-            .await?;
-
-        self.handle_response_raw(response).await
-    }
-
-    pub async fn raw_post<B: Serialize>(
-        &self,
-        path: &str,
-        body: &B,
-    ) -> Result<String, JariError> {
-        let url = self.api_url(path);
-        trace!("POST (raw) {}", url);
-
-        let response = self
-            .http
-            .post(&url)
-            .header(AUTHORIZATION, &self.auth_header)
-            .header(ACCEPT, "application/json")
-            .header(CONTENT_TYPE, "application/json")
-            .json(body)
-            .send()
-            .await?;
-
-        self.handle_response_raw(response).await
-    }
-
     fn api_url(&self, path: &str) -> String {
         let path = path.trim_start_matches('/');
         format!("{}/rest/api/3/{}", self.base_url, path)
@@ -225,17 +164,6 @@ impl JiraClient {
             Ok(())
         } else {
             Err(self.parse_error_response_no_body(status, response).await)
-        }
-    }
-
-    async fn handle_response_raw(&self, response: Response) -> Result<String, JariError> {
-        let status = response.status();
-
-        if status.is_success() {
-            let body = response.text().await.map_err(|e| JariError::Network(e.to_string()))?;
-            Ok(body)
-        } else {
-            Err(self.parse_error_response_raw(status, response).await)
         }
     }
 
@@ -269,22 +197,6 @@ impl JiraClient {
         map_status_to_error(status, Some(jira_errors), retry_after)
     }
 
-    async fn parse_error_response_raw(
-        &self,
-        status: StatusCode,
-        response: Response,
-    ) -> JariError {
-        let retry_after = parse_retry_after(response.headers());
-        let body_text = response.text().await.unwrap_or_default();
-
-        let jira_errors = serde_json::from_str::<ErrorCollection>(&body_text)
-            .unwrap_or(ErrorCollection {
-                error_messages: vec![body_text],
-                errors: std::collections::HashMap::new(),
-            });
-
-        map_status_to_error(status, Some(jira_errors), retry_after)
-    }
 }
 
 fn parse_retry_after(headers: &reqwest::header::HeaderMap) -> Option<u64> {
