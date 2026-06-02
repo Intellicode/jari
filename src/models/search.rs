@@ -6,8 +6,8 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct SearchRequest {
     pub jql: String,
-    #[serde(default)]
-    pub start_at: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub next_page_token: Option<String>,
     #[serde(default = "default_max_results")]
     pub max_results: usize,
     #[serde(default = "default_fields")]
@@ -34,7 +34,7 @@ impl Default for SearchRequest {
     fn default() -> Self {
         Self {
             jql: String::new(),
-            start_at: 0,
+            next_page_token: None,
             max_results: 100,
             fields: default_fields(),
             fields_by_keys: false,
@@ -45,9 +45,8 @@ impl Default for SearchRequest {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct SearchResults {
-    pub start_at: usize,
-    pub max_results: usize,
-    pub total: usize,
+    #[serde(default)]
+    pub next_page_token: Option<String>,
     pub is_last: bool,
     pub issues: Vec<IssueSummary>,
 }

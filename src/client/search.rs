@@ -31,18 +31,18 @@ impl JiraClient {
         let field_list: Vec<String> = fields.map(|f| f.to_vec()).unwrap_or(default_fields);
 
         let mut accumulated: Vec<IssueSummary> = Vec::new();
-        let mut start_at: usize = 0;
+        let mut next_page_token: Option<String> = None;
 
         loop {
             let request = SearchRequest {
                 jql: jql.to_string(),
-                start_at,
+                next_page_token: next_page_token.clone(),
                 max_results: page_size,
                 fields: field_list.clone(),
                 fields_by_keys: false,
             };
 
-            let response: SearchResults = self.post("/search", &request).await?;
+            let response: SearchResults = self.post("/search/jql", &request).await?;
 
             let issue_count = response.issues.len();
             accumulated.extend(response.issues);
@@ -56,7 +56,7 @@ impl JiraClient {
                 break;
             }
 
-            start_at += page_size;
+            next_page_token = response.next_page_token;
         }
 
         Ok(accumulated)
