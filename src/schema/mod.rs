@@ -186,7 +186,7 @@ fn generate_tools() -> Vec<ToolDefinition> {
                 properties: [
                     ("jql".into(), ParameterProperty { prop_type: "string".into(), description: "JQL query. Examples: 'project = PROJ AND assignee = currentUser()', 'status = \"In Progress\" ORDER BY priority DESC'".into(), default: None }),
                     ("max".into(), ParameterProperty { prop_type: "integer".into(), description: "Maximum results (default: all, capped at 1000)".into(), default: None }),
-                    ("fields".into(), ParameterProperty { prop_type: "string".into(), description: "Comma-separated fields (default: summary,status,assignee,priority,issuetype)".into(), default: None }),
+                    ("fields".into(), ParameterProperty { prop_type: "string".into(), description: "Comma-separated fields (default: summary,status,assignee,priority,issuetype,created,updated)".into(), default: None }),
                 ].into_iter().collect(),
                 required: vec!["jql".into()],
             },

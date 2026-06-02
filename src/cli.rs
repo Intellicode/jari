@@ -48,7 +48,7 @@ pub enum Commands {
         #[arg(
             short = 'f',
             long,
-            default_value = "summary,status,assignee,priority,issuetype",
+            default_value = "summary,status,assignee,priority,issuetype,created,updated",
             help = "Comma-separated fields"
         )]
         fields: Option<String>,

@@ -27,6 +27,8 @@ fn default_fields() -> Vec<String> {
         "assignee".into(),
         "priority".into(),
         "issuetype".into(),
+        "created".into(),
+        "updated".into(),
     ]
 }
 

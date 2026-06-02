@@ -27,6 +27,8 @@ impl JiraClient {
             "assignee".into(),
             "priority".into(),
             "issuetype".into(),
+            "created".into(),
+            "updated".into(),
         ];
         let field_list: Vec<String> = fields.map(|f| f.to_vec()).unwrap_or(default_fields);
 
