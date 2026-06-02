@@ -77,10 +77,14 @@ pub struct IssueSummaryFields {
     pub summary: String,
     pub issuetype: IssueType,
     pub status: Status,
+    #[serde(default)]
     pub priority: Option<Priority>,
+    #[serde(default)]
     pub assignee: Option<User>,
     pub created: String,
     pub updated: String,
+    #[serde(default)]
     pub duedate: Option<String>,
+    #[serde(default)]
     pub labels: Vec<String>,
 }
